@@ -2,6 +2,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <unordered_set>
 
 using namespace cv;
 
@@ -88,15 +89,91 @@ Mat detectEdges(Mat img) {
     return detected_edges;
  
 }
+ std::unordered_multiset<int> getZeroHierarchy(std::vector<Vec4i> hierarchy){
+    std::unordered_multiset<int> outermost;
+    int i = 0;
+    bool notFound = true;
+    while ((i != -1 || notFound) && (i <= hierarchy.size())){
+        if (notFound == false) {
+            outermost.insert(i);
+            i = hierarchy[i][0];
+        }
+        else if (hierarchy[i][3] == -1) {
+            notFound = false;
+            outermost.insert(i);
+            i = hierarchy[i][0];
+        }
+        else{
+            i +=1;
+        }
+    }
+    return outermost; 
+}
+
+ std::unordered_multiset<int> getZeroHierarchyAndDraw
+ (std::vector<Vec4i> hierarchy,std::vector<std::vector<Point>>contours, Mat img )
+ {
+    std::unordered_multiset<int> outermost;
+    // Mat img = Mat::zeros( edges.size(), CV_8UC3 );
+    int i = 0;
+    bool notFound = true;
+    while ((i != -1 || notFound) && (i <= hierarchy.size())){
+        if (notFound == false) {
+            outermost.insert(i);
+            Scalar color = Scalar(90,90,0);
+            drawContours( img, contours, i, color, 2, LINE_8);
+            i = hierarchy[i][0];
+
+        }
+        else if (hierarchy[i][3] == -1) {
+            notFound = false;
+            outermost.insert(i);
+            Scalar color = Scalar(90,90,0);
+            drawContours( img, contours, i, color, 2, LINE_8);
+            i = hierarchy[i][0];
+        }
+        else{
+            i +=1;
+        }
+    }
+    imshow("only zero hierarchy", img);
+
+    return outermost; 
+}
+
+// int[4] leastBoundingBox(Mat img){
+//     int[4] boundingBox;
+//     int totalWhite = countNonZero(img);
+//     int width = img.size();
+//     int height = img[0].size();
+
+//     int top = 0;
+//     int left = 0;
+//     int right = 0;
+//     int bottom = 0;
+
+//     left = find(0, width/2, 1,true);
+//     right = find(width, width/2, -2,true);
+//     top = find(0, height/2, 1,false);
+//     bottom = find(height, height/2, -1,false)
 
 
-int main() {
-    Mat img = imread("/Users/jennali/Documents/Projects/cnc/jenna_headshot.jpg");
-    Mat edges = detectEdges(img);
+//     int find(int start, int end, int sign, bool isX){
+//         if (isX){
+
+
+//         }
+//         else{
+
+//         }
+//     }
+// }
+
+
+std::tuple<std::vector<std::vector<Point>>, std::vector<Vec4i>> getContours(Mat edges) {
     RNG rng(12345);
-    std::vector<std::vector<Point>> contours;
     std::vector<Vec4i> hierarchy;
-    dilate(edges,edges,99);
+    std::vector<std::vector<Point>> contours;
     findContours( edges, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE );
     Mat drawing = Mat::zeros( edges.size(), CV_8UC3 );
     for( size_t i = 0; i< contours.size(); i++ )
@@ -104,8 +181,22 @@ int main() {
         Scalar color = Scalar( rng.uniform(0, 256), rng.uniform(0,256), rng.uniform(0,256) );
         drawContours( drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0 );
     }
-    
+    std::cout << "Number of hierarchy elements: " << hierarchy.size() << std::endl;
     imshow( "Contours", drawing );
+    return std::make_tuple(contours,hierarchy);
+
+}
+
+
+int main() {
+    Mat img = imread("/Users/jennali/Documents/Projects/cnc/circle.png");
+    RNG rng(12345);
+    Mat edges = detectEdges(img);
+    auto [contours,hierarchy] = getContours(edges);
+    std::unordered_multiset<int> zeroHierarchyIndices = getZeroHierarchy(hierarchy);
+    Mat onlyHierarchyDrawing = Mat::zeros( edges.size(), CV_8UC3 );
+    getZeroHierarchyAndDraw(hierarchy, contours, onlyHierarchyDrawing);
+    // imshow( "only heirarchy", onlyHierarchyDrawing );
     waitKey(0);
 
     
