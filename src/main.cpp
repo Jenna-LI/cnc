@@ -85,7 +85,7 @@ Mat detectEdges(Mat img) {
     Mat dst = Mat::zeros(grey.size(), img.type());
     img.copyTo( dst, detected_edges);
 
-    imshow( "test", dst );
+    imshow( "orig edges", dst );
     return detected_edges;
  
 }
@@ -93,7 +93,7 @@ Mat detectEdges(Mat img) {
     std::unordered_multiset<int> outermost;
     int i = 0;
     bool notFound = true;
-    while ((i != -1 || notFound) && (i <= hierarchy.size())){
+    while ((i != -1 || notFound) && (i < hierarchy.size())){
         if (notFound == false) {
             outermost.insert(i);
             i = hierarchy[i][0];
@@ -117,7 +117,7 @@ Mat detectEdges(Mat img) {
     // Mat img = Mat::zeros( edges.size(), CV_8UC3 );
     int i = 0;
     bool notFound = true;
-    while ((i != -1 || notFound) && (i <= hierarchy.size())){
+    while ((i != -1 || notFound) && (i < hierarchy.size())){
         if (notFound == false) {
             outermost.insert(i);
             Scalar color = Scalar(90,90,0);
@@ -184,20 +184,21 @@ std::tuple<std::vector<std::vector<Point>>, std::vector<Vec4i>> getContours(Mat 
     std::cout << "Number of hierarchy elements: " << hierarchy.size() << std::endl;
     imshow( "Contours", drawing );
     return std::make_tuple(contours,hierarchy);
-
 }
-
-
+// std::vector<std::vector<Point>> getBoundingBox(Mat img){
+    
+// }
 int main() {
-    Mat img = imread("/Users/jennali/Documents/Projects/cnc/circle.png");
+    Mat img = imread("/Users/jennali/Documents/Projects/cnc/cartoon.jpg");
     RNG rng(12345);
     Mat edges = detectEdges(img);
+    dilate(edges,edges,31);
+    imshow("dilated edges", edges);
     auto [contours,hierarchy] = getContours(edges);
+
     std::unordered_multiset<int> zeroHierarchyIndices = getZeroHierarchy(hierarchy);
     Mat onlyHierarchyDrawing = Mat::zeros( edges.size(), CV_8UC3 );
     getZeroHierarchyAndDraw(hierarchy, contours, onlyHierarchyDrawing);
     // imshow( "only heirarchy", onlyHierarchyDrawing );
     waitKey(0);
-
-    
 }
