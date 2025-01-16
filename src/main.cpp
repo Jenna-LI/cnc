@@ -185,11 +185,53 @@ std::tuple<std::vector<std::vector<Point>>, std::vector<Vec4i>> getContours(Mat 
     imshow( "Contours", drawing );
     return std::make_tuple(contours,hierarchy);
 }
-// std::vector<std::vector<Point>> getBoundingBox(Mat img){
-    
-// }
+std::vector<std::vector<Point>> getBoundingBox(Mat img){
+
+    int top = img.size().height-1;
+    int bottom = 0;
+    int left = img.size().width -1;
+    int right = 0;
+
+    for (size_t i = 0; i < img.size().height; i++) {
+        for (size_t w = 0; w < img.size().width; w++) {
+            uchar &pixel = img.at<uchar>(i, w);
+
+            if (pixel == 255 && i < top) {
+                top = i;
+            }
+
+            if (pixel == 255 && w < left) {
+                left = w;
+            }
+
+            if (pixel == 255 && w > right) {
+                right = w;
+            }
+
+            if (pixel== 255 && i > bottom) {
+                bottom = i;
+            }
+        }
+    }
+
+
+    cv::Point lt(left, top);
+    cv::Point rt(right, top);
+    cv::Point lb(left, bottom);
+    cv::Point rb(right, bottom);
+
+    std::vector<cv::Point> contourPts = { lt, rt, rb, lb };
+
+    std::vector<std::vector<cv::Point>> contours;
+    contours.push_back(contourPts);
+    // // may delete following two lines later.
+    cv::drawContours(img, contours, 0, cv::Scalar(45,99,166), LINE_8);
+    imshow("bounding box", img);
+    return {contourPts};
+
+}
 int main() {
-    Mat img = imread("/Users/jennali/Documents/Projects/cnc/cartoon.jpg");
+    Mat img = imread("/Users/jennali/Documents/Projects/cnc/ponder_headshot.jpg");
     RNG rng(12345);
     Mat edges = detectEdges(img);
     dilate(edges,edges,31);
@@ -199,6 +241,7 @@ int main() {
     std::unordered_multiset<int> zeroHierarchyIndices = getZeroHierarchy(hierarchy);
     Mat onlyHierarchyDrawing = Mat::zeros( edges.size(), CV_8UC3 );
     getZeroHierarchyAndDraw(hierarchy, contours, onlyHierarchyDrawing);
+    getBoundingBox(edges);
     // imshow( "only heirarchy", onlyHierarchyDrawing );
     waitKey(0);
 }
