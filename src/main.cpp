@@ -1,4 +1,5 @@
 #include <iostream>
+#include "GCode.h"
 #include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -141,35 +142,6 @@ Mat detectEdges(Mat img) {
     return outermost; 
 }
 
-// int[4] leastBoundingBox(Mat img){
-//     int[4] boundingBox;
-//     int totalWhite = countNonZero(img);
-//     int width = img.size();
-//     int height = img[0].size();
-
-//     int top = 0;
-//     int left = 0;
-//     int right = 0;
-//     int bottom = 0;
-
-//     left = find(0, width/2, 1,true);
-//     right = find(width, width/2, -2,true);
-//     top = find(0, height/2, 1,false);
-//     bottom = find(height, height/2, -1,false)
-
-
-//     int find(int start, int end, int sign, bool isX){
-//         if (isX){
-
-
-//         }
-//         else{
-
-//         }
-//     }
-// }
-
-
 std::tuple<std::vector<std::vector<Point>>, std::vector<Vec4i>> getContours(Mat edges) {
     RNG rng(12345);
     std::vector<Vec4i> hierarchy;
@@ -213,8 +185,6 @@ std::vector<std::vector<Point>> getBoundingBox(Mat img){
             }
         }
     }
-
-
     cv::Point lt(left, top);
     cv::Point rt(right, top);
     cv::Point lb(left, bottom);
@@ -228,20 +198,30 @@ std::vector<std::vector<Point>> getBoundingBox(Mat img){
     cv::drawContours(img, contours, 0, cv::Scalar(45,99,166), LINE_8);
     imshow("bounding box", img);
     return {contourPts};
-
 }
+
+// std::vector<std::vector<Point>> customVectorize(Mat img) {
+
+// }
+
+
 int main() {
-    Mat img = imread("/Users/jennali/Documents/Projects/cnc/ponder_headshot.jpg");
+    Mat img = imread("/Users/jennali/Documents/Projects/cnc/dinasour.png");
     RNG rng(12345);
     Mat edges = detectEdges(img);
     dilate(edges,edges,31);
     imshow("dilated edges", edges);
     auto [contours,hierarchy] = getContours(edges);
+    std::cout << "random contour size" << contours[5].size();
 
     std::unordered_multiset<int> zeroHierarchyIndices = getZeroHierarchy(hierarchy);
     Mat onlyHierarchyDrawing = Mat::zeros( edges.size(), CV_8UC3 );
     getZeroHierarchyAndDraw(hierarchy, contours, onlyHierarchyDrawing);
     getBoundingBox(edges);
-    // imshow( "only heirarchy", onlyHierarchyDrawing );
+
+    GCode gcode = GCode(contours, -0.5, 1);
+    std::string gcodeString = gcode.simpleGCodeGeneration();
+    gcode.saveToFile(gcodeString, "circleGDodeFile.txt");
+    // std::cout << "gcode info" << gcodeString;
     waitKey(0);
 }
